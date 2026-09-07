@@ -1,9 +1,14 @@
 # SmartSchool Project Instructions
 
-## Project
+## Project Overview
 SmartSchool is a web-based smart schooling platform.
 
-Technology:
+Target markets:
+- Egypt
+- Saudi Arabia
+- Future international schools
+
+Technology baseline:
 - .NET 10
 - ASP.NET Core
 - C# 14
@@ -12,96 +17,79 @@ Technology:
 - Redis
 - xUnit
 
-## Architecture
-
+## Global Architecture
 The overall system MUST use Modular Monolithic Architecture.
 
-Each business module is a separate bounded context.
+Each business module is a bounded context and owns its own domain model, persistence model, DbContext, migrations, schema, and contracts.
 
 Modules:
+1. Identity & Access — Clean Architecture
+2. Academic — Hexagonal Architecture
+3. Enrollment — Vertical Slice Architecture
+4. Attendance — Onion Architecture
+5. Finance — CQRS + DDD
+6. Notifications — Event-Driven Architecture
+7. Smart Insights — DDD + Processing/Data Pipeline
 
-1. Identity
-   - Clean Architecture
-
-2. Academic
-   - Hexagonal Architecture
-
-3. Enrollment
-   - Vertical Slice Architecture
-
-4. Attendance
-   - Onion Architecture
-
-5. Finance
-   - DDD + CQRS
-
-6. Notifications
-   - Event-Driven Architecture
-
-7. SmartInsights
-   - DDD + Processing Pipeline
+The architectural style inside each module may differ, but the whole product remains one Modular Monolith.
 
 ## DDD Rules
-
 Use:
+- Bounded Contexts
 - Aggregate Roots
 - Entities
 - Value Objects
+- Domain Services only when justified
 - Domain Events
 - Integration Events
-- Domain Services where appropriate
+- Explicit business invariants
 
-Business logic MUST NOT exist in Controllers.
+Business logic MUST NOT live in Controllers, EF configurations, repositories, or presentation code.
 
-Aggregates must protect business invariants.
+Aggregates must protect their own consistency rules.
 
 ## Module Isolation
-
 Each module:
-- Has its own DbContext
-- Has its own SQL schema
-- Has its own migrations
 - Owns its tables
-- Must not directly access tables from another module
+- Owns its DbContext
+- Owns its EF Core migrations
+- Owns its SQL schema
+- Must not directly access another module's DbContext
+- Must not query another module's tables directly
+- Must not create EF navigation properties across module boundaries
+- Must not create SQL foreign keys across module boundaries
 
-Do NOT create EF navigation properties across modules.
+Cross-module references must use IDs and explicit contracts/events.
 
-Do NOT create SQL foreign keys across module boundaries.
+## SQL Schemas
+Use these schemas:
+- platform
+- identity
+- academic
+- enrollment
+- attendance
+- finance
+- notifications
+- insights
 
-Cross-module references must use IDs.
-
-## Database Schemas
-
-platform
-identity
-academic
-enrollment
-attendance
-finance
-notifications
-insights
-
-## Communication
-
-Support both synchronous and asynchronous communication.
-
-Synchronous:
+## Communication Rules
+Synchronous module communication:
 - Explicit module contracts/interfaces
+- Used only when an immediate response is required
 
-Asynchronous:
-- Domain Events
-- Integration Events
-- Outbox Pattern
-- Inbox Pattern
-- Background Event Dispatcher
+Asynchronous module communication:
+- Domain Events inside a bounded context
+- Integration Events between bounded contexts
+- Outbox Pattern for reliable publication
+- Inbox Pattern for idempotent consumers
+- Background event dispatcher
 
-Modules must not communicate through direct DbContext access.
+Do not create distributed-transaction style flows across modules.
 
 ## Shared Kernel
+Keep SharedKernel very small.
 
-SharedKernel must remain small.
-
-Allowed concepts:
+Allowed candidates:
 - Entity
 - AggregateRoot
 - ValueObject
@@ -112,105 +100,100 @@ Allowed concepts:
 - Money
 - DateRange
 
-Never put business aggregates such as Student, Invoice, Teacher or Enrollment in SharedKernel.
+Do NOT place business concepts such as Student, Teacher, Invoice, Payment, Enrollment, Attendance, Grade, or Subject in SharedKernel.
 
-## Identity Module
+## Important Domain Decisions
+- Student and Enrollment are separate aggregates.
+- Class does not own students; Enrollment owns class membership.
+- AttendanceSession is the Attendance Aggregate Root.
+- AttendanceRecord is a child Entity inside AttendanceSession.
+- Invoice is the Finance Aggregate Root.
+- Payment is a child Entity inside Invoice.
+- TeacherAssignment is an independent Aggregate Root.
+- No cross-module EF navigation properties.
+- No cross-module SQL foreign keys.
 
-Identity follows Clean Architecture.
-
+## Identity Module — Clean Architecture
 Projects:
-
-SmartSchool.Modules.Identity.Domain
-SmartSchool.Modules.Identity.Application
-SmartSchool.Modules.Identity.Infrastructure
-SmartSchool.Modules.Identity.Presentation
+- SmartSchool.Modules.Identity.Domain
+- SmartSchool.Modules.Identity.Application
+- SmartSchool.Modules.Identity.Infrastructure
+- SmartSchool.Modules.Identity.Presentation
 
 Dependency direction:
+- Presentation -> Application -> Domain
+- Infrastructure -> Application
+- Infrastructure -> Domain
 
-Presentation -> Application -> Domain
-Infrastructure -> Application
-Infrastructure -> Domain
-
-Domain must have no references to:
-- EF Core
+Domain MUST NOT reference:
+- Entity Framework Core
 - SQL Server
 - ASP.NET Core
-- JWT
+- JWT libraries
 - Redis
+- Email providers
 
-## Identity Domain
+## Coding Rules
+- Enable nullable reference types.
+- Use async/await for I/O.
+- Accept CancellationToken for async application/infrastructure operations.
+- Prefer immutable records for commands, queries, DTOs, and events.
+- Do not expose IQueryable between layers/modules.
+- Avoid generic repositories.
+- Repositories should primarily target Aggregate Roots.
+- Keep handlers focused.
+- Prefer explicit code over unnecessary abstractions.
+- Use UTC timestamps for persisted technical timestamps.
+- Use Guid.CreateVersion7() for new aggregate/entity IDs where supported.
 
-Main aggregates:
+## Database Rules
+One SQL Server database, separate schemas per module.
 
-User
-Role
+Each module has its own DbContext and migration history table, for example:
+- identity.__EFMigrationsHistory
+- academic.__EFMigrationsHistory
+- enrollment.__EFMigrationsHistory
 
-Entities:
-UserRole
-RolePermission
-
-Permissions should use stable codes such as:
-
-students.view
-students.manage
-attendance.view
-attendance.record
-finance.invoice.view
-finance.invoice.create
-finance.payment.create
-
-## Database
-
-Use one SQL Server database with separate schemas.
-
-Each module must have:
-- Separate DbContext
-- Separate migration history table
-
-Example:
-
-identity.__EFMigrationsHistory
-academic.__EFMigrationsHistory
+Use rowversion for optimistic concurrency where appropriate.
 
 ## Testing
-
 Create:
 - Unit Tests
 - Integration Tests
 - Architecture Tests
 
-Architecture tests must verify module boundaries.
+Architecture tests must enforce:
+- Domain does not reference Infrastructure.
+- Application does not reference Infrastructure.
+- Modules do not reference another module's Infrastructure project.
+- Domain projects do not depend on Presentation projects.
+- Cross-module access occurs only through contracts/events.
 
-## Coding Rules
-
-- Use async/await for I/O
-- Use CancellationToken
-- Enable nullable reference types
-- Prefer immutable records for commands/events
-- Use dependency injection
-- Do not use generic repositories
-- Repositories should primarily exist for Aggregate Roots
-- Do not expose IQueryable between layers
-- Do not put business logic in repositories
-- Avoid unnecessary abstractions
-- Prefer explicit code over over-engineering
-
-## Current Development Order
-
-Implement only the following milestone first:
-
-1. Bootstrap solution
+## Current Implementation Order
+Implement in this order:
+1. Solution Bootstrap
 2. SharedKernel
-3. Identity module
-4. IdentityDbContext
-5. Initial Identity migration
-6. Create User
-7. Roles and Permissions
-8. Login
-9. JWT + Refresh Token
-10. Permission authorization
-11. Unit tests
-12. Integration tests
-13. Architecture tests
+3. Identity Domain
+4. Identity Application
+5. Identity Infrastructure
+6. IdentityDbContext
+7. Initial Identity migration
+8. Create User
+9. Roles and Permissions
+10. Login
+11. JWT + Refresh Token
+12. Permission authorization
+13. Unit Tests
+14. Integration Tests
+15. Architecture Tests
 
-Do NOT implement Academic or other modules until Identity milestone is complete.
+Do NOT implement Academic or later modules until the Identity milestone is complete and builds/tests pass.
+
+## Project Documentation
+Before implementing a feature, read the relevant documents under /docs:
+- docs/01-BRD.md
+- docs/02-UseCases.md
+- docs/03-Domain-Model.md
+- docs/04-ERD.md
+
+If code conflicts with these documents, do not silently invent a new design. Prefer the documented business rules and architecture. If a design change is required, document it as an ADR before changing behavior.
