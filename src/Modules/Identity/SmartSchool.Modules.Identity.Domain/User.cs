@@ -7,22 +7,25 @@ public sealed class User : AggregateRoot<Guid>
     private readonly List<UserRole> _roles = [];
     private readonly List<RefreshToken> _refreshTokens = [];
 
-    private User(Guid id, Email email, string displayName, string passwordHash) : base(id)
+    private User(Guid id, string username, Email email, string displayName, string passwordHash) : base(id)
     {
+        Username = username;
         Email = email;
         DisplayName = displayName;
         PasswordHash = passwordHash;
         CreatedAtUtc = DateTimeOffset.UtcNow;
-        Raise(new UserCreatedDomainEvent(id, email.Value, CreatedAtUtc));
+        Raise(new UserCreatedDomainEvent(id, username, email.Value, CreatedAtUtc));
     }
 
     private User() { }
 
+    public string Username { get; private set; } = string.Empty;
     public Email Email { get; private set; } = null!;
     public string DisplayName { get; private set; } = string.Empty;
     public string PasswordHash { get; private set; } = string.Empty;
     public bool IsActive { get; private set; } = true;
     public DateTimeOffset CreatedAtUtc { get; private init; }
+    public DateTimeOffset? LastLoginAtUtc { get; private set; }
     public IReadOnlyCollection<UserRole> Roles => _roles.AsReadOnly();
     public IReadOnlyCollection<RefreshToken> RefreshTokens => _refreshTokens.AsReadOnly();
 
@@ -31,21 +34,72 @@ public sealed class User : AggregateRoot<Guid>
         var emailResult = Email.Create(email);
         if (emailResult.IsFailure) return Result.Failure<User>(emailResult.Error);
 
+        var username = emailResult.Value.Value[..emailResult.Value.Value.IndexOf('@')];
+        return Create(username, emailResult.Value.Value, displayName, passwordHash);
+    }
+
+    public static Result<User> Create(string username, string email, string displayName, string passwordHash)
+    {
+        var normalizedUsername = username?.Trim().ToLowerInvariant() ?? string.Empty;
+        if (!IsValidUsername(normalizedUsername))
+            return Result.Failure<User>(IdentityErrors.InvalidUsername);
+
+        var emailResult = Email.Create(email);
+        if (emailResult.IsFailure) return Result.Failure<User>(emailResult.Error);
+
         var normalizedName = displayName?.Trim() ?? string.Empty;
         if (normalizedName.Length is < 2 or > 200)
             return Result.Failure<User>(IdentityErrors.InvalidName);
 
         ArgumentException.ThrowIfNullOrWhiteSpace(passwordHash);
-        return Result.Success(new User(Guid.NewGuid(), emailResult.Value, normalizedName, passwordHash));
+        return Result.Success(new User(Guid.NewGuid(), normalizedUsername, emailResult.Value, normalizedName, passwordHash));
+    }
+
+    public void Activate()
+    {
+        if (IsActive) return;
+
+        IsActive = true;
+        Raise(new UserActivatedDomainEvent(Id, DateTimeOffset.UtcNow));
+    }
+
+    public void Deactivate()
+    {
+        if (!IsActive) return;
+
+        IsActive = false;
+        Raise(new UserDeactivatedDomainEvent(Id, DateTimeOffset.UtcNow));
+    }
+
+    public Result RegisterLogin(DateTimeOffset occurredOnUtc)
+    {
+        if (!IsActive) return Result.Failure(IdentityErrors.UserInactive);
+
+        LastLoginAtUtc = occurredOnUtc;
+        return Result.Success();
     }
 
     public Result AssignRole(Guid roleId)
     {
         if (_roles.Any(x => x.RoleId == roleId)) return Result.Failure(IdentityErrors.DuplicateRole);
         _roles.Add(new UserRole(Guid.NewGuid(), Id, roleId));
-        Raise(new RoleAssignedToUserDomainEvent(Id, roleId, DateTimeOffset.UtcNow));
+        Raise(new RoleAssignedDomainEvent(Id, roleId, DateTimeOffset.UtcNow));
         return Result.Success();
     }
+
+    public Result RemoveRole(Guid roleId)
+    {
+        var assignment = _roles.SingleOrDefault(x => x.RoleId == roleId);
+        if (assignment is null) return Result.Failure(IdentityErrors.RoleNotAssigned);
+
+        _roles.Remove(assignment);
+        return Result.Success();
+    }
+
+    private static bool IsValidUsername(string username) =>
+        username.Length is >= 3 and <= 50 &&
+        char.IsAsciiLetterOrDigit(username[0]) &&
+        username.All(character => char.IsAsciiLetterOrDigit(character) || character is '.' or '_' or '-');
 
     public void IssueRefreshToken(string tokenHash, DateTimeOffset expiresAtUtc)
     {
@@ -64,47 +118,3 @@ public sealed class User : AggregateRoot<Guid>
         return Result.Success();
     }
 }
-
-public sealed class UserRole : Entity<Guid>
-{
-    internal UserRole(Guid id, Guid userId, Guid roleId) : base(id)
-    {
-        UserId = userId;
-        RoleId = roleId;
-        AssignedAtUtc = DateTimeOffset.UtcNow;
-    }
-
-    private UserRole() { }
-    public Guid UserId { get; private init; }
-    public Guid RoleId { get; private init; }
-    public DateTimeOffset AssignedAtUtc { get; private init; }
-}
-
-public sealed class RefreshToken : Entity<Guid>
-{
-    internal RefreshToken(Guid id, Guid userId, string tokenHash, DateTimeOffset expiresAtUtc) : base(id)
-    {
-        UserId = userId;
-        TokenHash = tokenHash;
-        ExpiresAtUtc = expiresAtUtc;
-        CreatedAtUtc = DateTimeOffset.UtcNow;
-    }
-
-    private RefreshToken() { }
-    public Guid UserId { get; private init; }
-    public string TokenHash { get; private init; } = string.Empty;
-    public DateTimeOffset ExpiresAtUtc { get; private init; }
-    public DateTimeOffset CreatedAtUtc { get; private init; }
-    public DateTimeOffset? RevokedAtUtc { get; private set; }
-    public string? ReplacedByTokenHash { get; private set; }
-    public bool IsActive(DateTimeOffset nowUtc) => RevokedAtUtc is null && ExpiresAtUtc > nowUtc;
-
-    internal void Revoke(string replacementHash, DateTimeOffset nowUtc)
-    {
-        RevokedAtUtc = nowUtc;
-        ReplacedByTokenHash = replacementHash;
-    }
-}
-
-public sealed record UserCreatedDomainEvent(Guid UserId, string Email, DateTimeOffset OccurredOnUtc) : IDomainEvent;
-public sealed record RoleAssignedToUserDomainEvent(Guid UserId, Guid RoleId, DateTimeOffset OccurredOnUtc) : IDomainEvent;
