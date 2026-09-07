@@ -14,5 +14,6 @@
     <Project Path="tests/SmartSchool.ArchitectureTests/SmartSchool.ArchitectureTests.csproj" />
     <Project Path="tests/SmartSchool.Modules.Identity.IntegrationTests/SmartSchool.Modules.Identity.IntegrationTests.csproj" />
     <Project Path="tests/SmartSchool.Modules.Identity.UnitTests/SmartSchool.Modules.Identity.UnitTests.csproj" />
+    <Project Path="tests/SmartSchool.SharedKernel.UnitTests/SmartSchool.SharedKernel.UnitTests.csproj" />
   </Folder>
 </Solution>

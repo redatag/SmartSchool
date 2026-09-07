@@ -9,6 +9,8 @@ public class Result
 {
     protected Result(bool isSuccess, Error error)
     {
+        ArgumentNullException.ThrowIfNull(error);
+
         if (isSuccess == (error != Error.None))
         {
             throw new ArgumentException("A successful result cannot contain an error, and a failed result must contain one.");
