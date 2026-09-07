@@ -58,7 +58,10 @@ public sealed class IdentityFlowTests
 
     private static IdentityDbContext CreateDbContext() => new(
         new DbContextOptionsBuilder<IdentityDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
+            .UseInMemoryDatabase(
+                Guid.NewGuid().ToString(),
+                options => options.EnableNullChecks(false))
+            .Options);
 
     private sealed class FixedClock(DateTimeOffset utcNow) : IClock
     {

@@ -11,6 +11,7 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<Role> Roles => Set<Role>();
+    public DbSet<PermissionRecord> Permissions => Set<PermissionRecord>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
@@ -67,4 +68,12 @@ public sealed class InboxMessage
     public DateTimeOffset ReceivedOnUtc { get; private init; }
     public DateTimeOffset? ProcessedOnUtc { get; set; }
     public string? Error { get; set; }
+}
+
+public sealed class PermissionRecord
+{
+    private PermissionRecord() { }
+
+    public string Code { get; private init; } = string.Empty;
+    public string Description { get; private init; } = string.Empty;
 }

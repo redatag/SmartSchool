@@ -41,6 +41,12 @@ namespace SmartSchool.Modules.Identity.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("RevokedAtUtc")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<string>("TokenHash")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -54,7 +60,7 @@ namespace SmartSchool.Modules.Identity.Infrastructure.Persistence.Migrations
                     b.HasIndex("TokenHash")
                         .IsUnique();
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "ExpiresAtUtc");
 
                     b.ToTable("RefreshTokens", "identity");
                 });
@@ -72,6 +78,12 @@ namespace SmartSchool.Modules.Identity.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Name")
@@ -88,12 +100,15 @@ namespace SmartSchool.Modules.Identity.Infrastructure.Persistence.Migrations
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                        .HasColumnType("nvarchar(150)")
+                        .HasColumnName("PermissionCode");
 
                     b.Property<Guid>("RoleId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Code");
 
                     b.HasIndex("RoleId", "Code")
                         .IsUnique();
@@ -117,12 +132,29 @@ namespace SmartSchool.Modules.Identity.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<DateTimeOffset?>("LastLoginAtUtc")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(512)
                         .HasColumnType("nvarchar(512)");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("Username")
+                        .IsUnique();
 
                     b.ToTable("Users", "identity");
                 });
@@ -207,6 +239,67 @@ namespace SmartSchool.Modules.Identity.Infrastructure.Persistence.Migrations
                     b.ToTable("OutboxMessages", "identity");
                 });
 
+            modelBuilder.Entity("SmartSchool.Modules.Identity.Infrastructure.Persistence.PermissionRecord", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.HasKey("Code");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Permissions", "identity");
+
+                    b.HasData(
+                        new
+                        {
+                            Code = "attendance.record",
+                            Description = "attendance.record"
+                        },
+                        new
+                        {
+                            Code = "attendance.view",
+                            Description = "attendance.view"
+                        },
+                        new
+                        {
+                            Code = "finance.invoice.create",
+                            Description = "finance.invoice.create"
+                        },
+                        new
+                        {
+                            Code = "finance.invoice.view",
+                            Description = "finance.invoice.view"
+                        },
+                        new
+                        {
+                            Code = "finance.payment.create",
+                            Description = "finance.payment.create"
+                        },
+                        new
+                        {
+                            Code = "identity.roles.manage",
+                            Description = "identity.roles.manage"
+                        },
+                        new
+                        {
+                            Code = "students.manage",
+                            Description = "students.manage"
+                        },
+                        new
+                        {
+                            Code = "students.view",
+                            Description = "students.view"
+                        });
+                });
+
             modelBuilder.Entity("SmartSchool.Modules.Identity.Domain.RefreshToken", b =>
                 {
                     b.HasOne("SmartSchool.Modules.Identity.Domain.User", null)
@@ -218,6 +311,12 @@ namespace SmartSchool.Modules.Identity.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("SmartSchool.Modules.Identity.Domain.RolePermission", b =>
                 {
+                    b.HasOne("SmartSchool.Modules.Identity.Infrastructure.Persistence.PermissionRecord", null)
+                        .WithMany()
+                        .HasForeignKey("Code")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("SmartSchool.Modules.Identity.Domain.Role", null)
                         .WithMany("Permissions")
                         .HasForeignKey("RoleId")

@@ -3,10 +3,12 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace SmartSchool.Modules.Identity.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialIdentity : Migration
+    public partial class InitialIdentitySchema : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -48,13 +50,27 @@ namespace SmartSchool.Modules.Identity.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Permissions",
+                schema: "identity",
+                columns: table => new
+                {
+                    Code = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Permissions", x => x.Code);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Roles",
                 schema: "identity",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    CreatedAtUtc = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false)
+                    CreatedAtUtc = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -67,11 +83,14 @@ namespace SmartSchool.Modules.Identity.Infrastructure.Persistence.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Username = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     Email = table.Column<string>(type: "nvarchar(320)", maxLength: 320, nullable: false),
                     DisplayName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     PasswordHash = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedAtUtc = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false)
+                    CreatedAtUtc = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
+                    LastLoginAtUtc = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -85,11 +104,18 @@ namespace SmartSchool.Modules.Identity.Infrastructure.Persistence.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     RoleId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Code = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false)
+                    PermissionCode = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_RolePermissions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_RolePermissions_Permissions_PermissionCode",
+                        column: x => x.PermissionCode,
+                        principalSchema: "identity",
+                        principalTable: "Permissions",
+                        principalColumn: "Code",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_RolePermissions_Roles_RoleId",
                         column: x => x.RoleId,
@@ -110,7 +136,8 @@ namespace SmartSchool.Modules.Identity.Infrastructure.Persistence.Migrations
                     ExpiresAtUtc = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     CreatedAtUtc = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     RevokedAtUtc = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
-                    ReplacedByTokenHash = table.Column<string>(type: "nvarchar(64)", maxLength: 64, nullable: true)
+                    ReplacedByTokenHash = table.Column<string>(type: "nvarchar(64)", maxLength: 64, nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -153,11 +180,34 @@ namespace SmartSchool.Modules.Identity.Infrastructure.Persistence.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.InsertData(
+                schema: "identity",
+                table: "Permissions",
+                columns: new[] { "Code", "Description" },
+                values: new object[,]
+                {
+                    { "attendance.record", "attendance.record" },
+                    { "attendance.view", "attendance.view" },
+                    { "finance.invoice.create", "finance.invoice.create" },
+                    { "finance.invoice.view", "finance.invoice.view" },
+                    { "finance.payment.create", "finance.payment.create" },
+                    { "identity.roles.manage", "identity.roles.manage" },
+                    { "students.manage", "students.manage" },
+                    { "students.view", "students.view" }
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_OutboxMessages_ProcessedOnUtc",
                 schema: "identity",
                 table: "OutboxMessages",
                 column: "ProcessedOnUtc");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Permissions_Code",
+                schema: "identity",
+                table: "Permissions",
+                column: "Code",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_RefreshTokens_TokenHash",
@@ -167,16 +217,22 @@ namespace SmartSchool.Modules.Identity.Infrastructure.Persistence.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_RefreshTokens_UserId",
+                name: "IX_RefreshTokens_UserId_ExpiresAtUtc",
                 schema: "identity",
                 table: "RefreshTokens",
-                column: "UserId");
+                columns: new[] { "UserId", "ExpiresAtUtc" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_RolePermissions_RoleId_Code",
+                name: "IX_RolePermissions_PermissionCode",
                 schema: "identity",
                 table: "RolePermissions",
-                columns: new[] { "RoleId", "Code" },
+                column: "PermissionCode");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RolePermissions_RoleId_PermissionCode",
+                schema: "identity",
+                table: "RolePermissions",
+                columns: new[] { "RoleId", "PermissionCode" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -205,6 +261,13 @@ namespace SmartSchool.Modules.Identity.Infrastructure.Persistence.Migrations
                 table: "Users",
                 column: "Email",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_Username",
+                schema: "identity",
+                table: "Users",
+                column: "Username",
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -228,6 +291,10 @@ namespace SmartSchool.Modules.Identity.Infrastructure.Persistence.Migrations
 
             migrationBuilder.DropTable(
                 name: "UserRoles",
+                schema: "identity");
+
+            migrationBuilder.DropTable(
+                name: "Permissions",
                 schema: "identity");
 
             migrationBuilder.DropTable(
