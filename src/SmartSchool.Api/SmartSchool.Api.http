@@ -1,0 +1,27 @@
+@SmartSchool.Api_HostAddress = http://localhost:5000
+
+GET {{SmartSchool.Api_HostAddress}}/health
+Accept: application/json
+
+###
+
+POST {{SmartSchool.Api_HostAddress}}/api/identity/users
+Content-Type: application/json
+
+{
+  "email": "principal@school.test",
+  "displayName": "School Principal",
+  "password": "ChangeMe123"
+}
+
+###
+
+POST {{SmartSchool.Api_HostAddress}}/api/identity/login
+Content-Type: application/json
+
+{
+  "email": "principal@school.test",
+  "password": "ChangeMe123"
+}
+
+###

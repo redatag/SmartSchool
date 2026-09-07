@@ -1,0 +1,18 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SmartSchool.Api/SmartSchool.Api.csproj" />
+    <Project Path="src/SmartSchool.SharedKernel/SmartSchool.SharedKernel.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Identity/">
+    <Project Path="src/Modules/Identity/SmartSchool.Modules.Identity.Application/SmartSchool.Modules.Identity.Application.csproj" />
+    <Project Path="src/Modules/Identity/SmartSchool.Modules.Identity.Domain/SmartSchool.Modules.Identity.Domain.csproj" />
+    <Project Path="src/Modules/Identity/SmartSchool.Modules.Identity.Infrastructure/SmartSchool.Modules.Identity.Infrastructure.csproj" />
+    <Project Path="src/Modules/Identity/SmartSchool.Modules.Identity.Presentation/SmartSchool.Modules.Identity.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SmartSchool.ArchitectureTests/SmartSchool.ArchitectureTests.csproj" />
+    <Project Path="tests/SmartSchool.Modules.Identity.IntegrationTests/SmartSchool.Modules.Identity.IntegrationTests.csproj" />
+    <Project Path="tests/SmartSchool.Modules.Identity.UnitTests/SmartSchool.Modules.Identity.UnitTests.csproj" />
+  </Folder>
+</Solution>
