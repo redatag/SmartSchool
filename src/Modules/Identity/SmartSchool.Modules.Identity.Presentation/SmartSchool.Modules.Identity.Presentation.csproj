@@ -2,14 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="..\SmartSchool.Modules.Identity.Application\SmartSchool.Modules.Identity.Application.csproj" />
-    <ProjectReference Include="..\SmartSchool.Modules.Identity.Domain\SmartSchool.Modules.Identity.Domain.csproj" />
   </ItemGroup>
 
 </Project>

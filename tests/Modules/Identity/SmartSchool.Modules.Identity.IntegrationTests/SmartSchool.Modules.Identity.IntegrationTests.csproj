@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\src\Modules\Identity\SmartSchool.Modules.Identity.Infrastructure\SmartSchool.Modules.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Modules\Identity\SmartSchool.Modules.Identity.Presentation\SmartSchool.Modules.Identity.Presentation.csproj" />
+  </ItemGroup>
+</Project>
