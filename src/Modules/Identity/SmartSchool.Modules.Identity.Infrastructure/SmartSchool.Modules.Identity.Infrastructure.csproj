@@ -5,6 +5,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\SmartSchool.Modules.Identity.Application\SmartSchool.Modules.Identity.Application.csproj" />
     <ProjectReference Include="..\SmartSchool.Modules.Identity.Domain\SmartSchool.Modules.Identity.Domain.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\SmartSchool.Infrastructure\SmartSchool.Infrastructure.csproj" />

@@ -15,4 +15,8 @@
     <ProjectReference Include="..\..\..\..\src\Modules\Identity\SmartSchool.Modules.Identity.Domain\SmartSchool.Modules.Identity.Domain.csproj" />
     <ProjectReference Include="..\..\..\..\src\Modules\Identity\SmartSchool.Modules.Identity.Application\SmartSchool.Modules.Identity.Application.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
 </Project>
