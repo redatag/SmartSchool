@@ -42,6 +42,8 @@ public sealed class IdentityArchitectureTests
         Assert.Contains(typeof(IUserRepository), typeof(UserRepository).GetInterfaces());
         Assert.Contains(typeof(IRoleRepository), typeof(RoleRepository).GetInterfaces());
         Assert.Contains(typeof(ITokenProvider), typeof(JwtTokenProvider).GetInterfaces());
+        Assert.Contains(typeof(IRefreshTokenProvider), typeof(RefreshTokenProvider).GetInterfaces());
+        Assert.Contains(typeof(IRefreshTokenRepository), typeof(RefreshTokenRepository).GetInterfaces());
         Assert.Contains(typeof(IIdentityUnitOfWork), typeof(IdentityDbContext).GetInterfaces());
     }
 
