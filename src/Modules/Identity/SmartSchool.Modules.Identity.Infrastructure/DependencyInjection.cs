@@ -18,10 +18,13 @@ public static class DependencyInjection
             options.UseSqlServer(connectionString, sql =>
                 sql.MigrationsHistoryTable("__EFMigrationsHistory", "identity")));
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IIdentityUnitOfWork>(provider => provider.GetRequiredService<IdentityDbContext>());
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<ICreateUserCommandValidator, CreateUserCommandValidator>();
+        services.AddSingleton<ICreateRoleCommandValidator, CreateRoleCommandValidator>();
         services.AddScoped<CreateUserCommandHandler>();
+        services.AddScoped<CreateRoleCommandHandler>();
         return services;
     }
 }

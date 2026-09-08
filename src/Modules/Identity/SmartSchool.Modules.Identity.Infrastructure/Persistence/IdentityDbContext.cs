@@ -8,6 +8,7 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
     : DbContext(options), IIdentityUnitOfWork
 {
     public DbSet<User> Users => Set<User>();
+    public DbSet<Role> Roles => Set<Role>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
