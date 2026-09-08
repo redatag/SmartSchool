@@ -197,3 +197,44 @@ Before implementing a feature, read the relevant documents under /docs:
 - docs/04-ERD.md
 
 If code conflicts with these documents, do not silently invent a new design. Prefer the documented business rules and architecture. If a design change is required, document it as an ADR before changing behavior.
+
+## Git Workflow
+
+After completing an explicitly requested feature:
+
+1. Run:
+   - dotnet build
+   - dotnet test
+
+2. Do not commit if build or tests fail.
+
+3. If build and tests succeed:
+   - Review git diff.
+   - Stage only files related to the current task.
+   - Create one meaningful Git commit.
+   - Push the current branch to origin.
+
+4. Use Conventional Commit messages.
+
+Examples:
+- feat(identity): add create user feature
+- feat(identity): add role management
+- feat(identity): assign role to user
+- fix(identity): prevent duplicate usernames
+- test(identity): add create user integration tests
+
+5. Never:
+   - force push
+   - push directly to another branch
+   - amend or rewrite existing commits unless explicitly requested
+   - commit secrets, passwords, tokens, connection strings, .env files, or generated build artifacts
+
+6. Before committing, always run:
+   git status
+   git diff
+
+7. After pushing, report:
+   - branch name
+   - commit hash
+   - commit message
+   - push result
