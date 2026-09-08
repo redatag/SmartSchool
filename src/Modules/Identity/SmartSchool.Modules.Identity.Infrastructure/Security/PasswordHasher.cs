@@ -9,4 +9,7 @@ public sealed class PasswordHasher : IPasswordHasher
     private readonly PasswordHasher<object> _hasher = new();
 
     public string Hash(string password) => _hasher.HashPassword(UserContext, password);
+
+    public bool Verify(string hashedPassword, string providedPassword) =>
+        _hasher.VerifyHashedPassword(UserContext, hashedPassword, providedPassword) != PasswordVerificationResult.Failed;
 }

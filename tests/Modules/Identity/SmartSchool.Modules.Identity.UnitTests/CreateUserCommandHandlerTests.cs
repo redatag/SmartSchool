@@ -70,6 +70,7 @@ public sealed class CreateUserCommandHandlerTests
         public bool EmailExists { get; init; }
         public User? AddedUser { get; private set; }
         public Task<User?> GetByIdAsync(Guid userId, CancellationToken cancellationToken) => Task.FromResult<User?>(null);
+        public Task<User?> GetByUsernameOrEmailAsync(Guid schoolId, string normalizedUsernameOrEmail, CancellationToken cancellationToken) => Task.FromResult<User?>(null);
         public Task<bool> UsernameExistsAsync(Guid schoolId, string normalizedUsername, CancellationToken cancellationToken) => Task.FromResult(UsernameExists);
         public Task<bool> EmailExistsAsync(Guid schoolId, string normalizedEmail, CancellationToken cancellationToken) => Task.FromResult(EmailExists);
         public void Add(User user) => AddedUser = user;
@@ -78,6 +79,7 @@ public sealed class CreateUserCommandHandlerTests
     private sealed class FakePasswordHasher : IPasswordHasher
     {
         public string Hash(string password) => $"hashed::{password}";
+        public bool Verify(string hashedPassword, string providedPassword) => false;
     }
 
     private sealed class FakeUnitOfWork : IIdentityUnitOfWork

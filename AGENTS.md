@@ -238,3 +238,118 @@ Examples:
    - commit hash
    - commit message
    - push result
+   
+   ## Automated Git Feature Workflow
+
+For every completed feature, follow this workflow automatically.
+
+### Preconditions
+Before any Git operation:
+
+1. Run:
+   git status
+   git branch --show-current
+
+2. Confirm the current branch starts with:
+   feature/
+
+3. Run:
+   dotnet build
+   dotnet test
+
+4. If build or tests fail:
+   - fix the problems
+   - rerun build and tests
+   - DO NOT merge or push until both succeed
+
+### Commit Current Feature
+
+After build and tests succeed:
+
+1. Review:
+   git status
+   git diff
+
+2. Stage only files related to the current feature.
+
+3. Create one Conventional Commit.
+
+Example:
+
+feat(identity): assign roles to users
+
+4. Push the current feature branch:
+
+git push origin <current-feature-branch>
+
+### Merge Into Develop
+
+After successful push:
+
+1. Switch to develop:
+
+git switch develop
+
+2. Update develop:
+
+git pull origin develop
+
+3. Merge the completed feature branch:
+
+git merge --no-ff <current-feature-branch>
+
+4. Run again:
+
+dotnet build
+dotnet test
+
+5. If build or tests fail:
+   - stop
+   - do not push develop
+   - report the problem
+
+6. If build and tests succeed:
+
+git push origin develop
+
+### Create Next Feature Branch
+
+After develop is successfully pushed:
+
+1. Create the next feature branch from the updated develop branch:
+
+git switch -c <next-feature-branch>
+
+2. Push it and configure upstream:
+
+git push -u origin <next-feature-branch>
+
+3. Confirm:
+
+git branch --show-current
+git status
+
+### Safety Rules
+
+NEVER:
+- force push
+- merge directly into main
+- delete main
+- delete develop
+- rewrite Git history
+- amend previous commits unless explicitly requested
+- use git reset --hard unless explicitly requested
+- commit secrets
+- commit passwords
+- commit access tokens
+- commit production connection strings
+
+Always leave the repository on the newly created next feature branch.
+
+At the end report:
+- completed feature
+- merged branch
+- merge result
+- develop push result
+- new feature branch
+- current branch

@@ -114,6 +114,11 @@ public sealed class AssignRoleToUserCommandHandlerTests
         public Task<User?> GetByIdAsync(Guid userId, CancellationToken cancellationToken) =>
             Task.FromResult(user?.UserId == userId ? user : null);
 
+        public Task<User?> GetByUsernameOrEmailAsync(
+            Guid schoolId,
+            string normalizedUsernameOrEmail,
+            CancellationToken cancellationToken) => Task.FromResult<User?>(null);
+
         public Task<bool> UsernameExistsAsync(
             Guid schoolId,
             string normalizedUsername,

@@ -11,6 +11,18 @@ public sealed class UserRepository(IdentityDbContext dbContext) : IUserRepositor
             .Include(x => x.UserRoles)
             .SingleOrDefaultAsync(x => x.UserId == userId, cancellationToken);
 
+    public Task<User?> GetByUsernameOrEmailAsync(
+        Guid schoolId,
+        string normalizedUsernameOrEmail,
+        CancellationToken cancellationToken) =>
+        dbContext.Users
+            .Include(x => x.UserRoles)
+            .SingleOrDefaultAsync(
+                x => x.SchoolId == schoolId &&
+                     (x.NormalizedUsername == normalizedUsernameOrEmail ||
+                      x.NormalizedEmail == normalizedUsernameOrEmail),
+                cancellationToken);
+
     public Task<bool> UsernameExistsAsync(Guid schoolId, string normalizedUsername, CancellationToken cancellationToken) =>
         dbContext.Users.AnyAsync(
             x => x.SchoolId == schoolId && x.NormalizedUsername == normalizedUsername,
