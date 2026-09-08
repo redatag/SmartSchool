@@ -38,6 +38,7 @@ public sealed class IdentityArchitectureTests
     public void Infrastructure_ImplementsApplicationAbstractions()
     {
         Assert.Contains(typeof(IUserRepository), typeof(UserRepository).GetInterfaces());
+        Assert.Contains(typeof(IRoleRepository), typeof(RoleRepository).GetInterfaces());
         Assert.Contains(typeof(IIdentityUnitOfWork), typeof(IdentityDbContext).GetInterfaces());
     }
 

@@ -18,6 +18,14 @@ public sealed class RoleTests
     }
 
     [Fact]
+    public void Create_AllowsExplicitSystemRole()
+    {
+        var role = Role.Create(Guid.NewGuid(), "Administrator", isSystemRole: true);
+
+        Assert.True(role.IsSystemRole);
+    }
+
+    [Fact]
     public void Create_CreatesVersion7Id()
     {
         var role = Role.Create(Guid.NewGuid(), "Teacher");
@@ -50,5 +58,11 @@ public sealed class RoleTests
     public void Create_RejectsInvalidName(string name)
     {
         Assert.Throws<IdentityDomainException>(() => Role.Create(Guid.NewGuid(), name));
+    }
+
+    [Fact]
+    public void Create_RejectsEmptySchoolId()
+    {
+        Assert.Throws<IdentityDomainException>(() => Role.Create(Guid.Empty, "Teacher"));
     }
 }
