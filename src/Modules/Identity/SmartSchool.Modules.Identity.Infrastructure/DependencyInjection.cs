@@ -23,8 +23,10 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<ICreateUserCommandValidator, CreateUserCommandValidator>();
         services.AddSingleton<ICreateRoleCommandValidator, CreateRoleCommandValidator>();
+        services.AddSingleton<IAssignRoleToUserCommandValidator, AssignRoleToUserCommandValidator>();
         services.AddScoped<CreateUserCommandHandler>();
         services.AddScoped<CreateRoleCommandHandler>();
+        services.AddScoped<AssignRoleToUserCommandHandler>();
         return services;
     }
 }

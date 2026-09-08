@@ -5,6 +5,7 @@ namespace SmartSchool.Modules.Identity.Domain;
 public sealed class User
 {
     private readonly List<IDomainEvent> _domainEvents = [];
+    private readonly List<UserRole> _userRoles = [];
 
     private User(
         Guid userId,
@@ -49,6 +50,7 @@ public sealed class User
     public UserStatus Status { get; private init; }
     public DateTime CreatedAtUtc { get; private init; }
     public DateTime? LastLoginAtUtc { get; private init; }
+    public IReadOnlyCollection<UserRole> UserRoles => _userRoles.AsReadOnly();
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
     public static User Create(
@@ -81,6 +83,17 @@ public sealed class User
             passwordHash, firstName, lastName, phoneNumber, DateTime.UtcNow);
     }
 
+    public void AssignRole(Guid roleId)
+    {
+        if (roleId == Guid.Empty) throw new IdentityDomainException("RoleId is required.");
+        if (_userRoles.Any(userRole => userRole.RoleId == roleId))
+            throw new RoleAlreadyAssignedDomainException(UserId, roleId);
+
+        var assignedAtUtc = DateTime.UtcNow;
+        _userRoles.Add(UserRole.Create(UserId, roleId, assignedAtUtc));
+        _domainEvents.Add(new RoleAssignedDomainEvent(UserId, roleId, assignedAtUtc));
+    }
+
     public void ClearDomainEvents() => _domainEvents.Clear();
 
     private static string Required(string value, string name, int maximumLength)
@@ -106,4 +119,9 @@ public interface IDomainEvent
 
 public sealed record UserCreatedDomainEvent(Guid UserId, Guid SchoolId, DateTime OccurredOnUtc) : IDomainEvent;
 
-public sealed class IdentityDomainException(string message) : Exception(message);
+public sealed record RoleAssignedDomainEvent(Guid UserId, Guid RoleId, DateTime OccurredOnUtc) : IDomainEvent;
+
+public class IdentityDomainException(string message) : Exception(message);
+
+public sealed class RoleAlreadyAssignedDomainException(Guid userId, Guid roleId)
+    : IdentityDomainException($"User '{userId}' already has role '{roleId}'.");

@@ -7,7 +7,9 @@ namespace SmartSchool.Modules.Identity.Infrastructure.Persistence;
 public sealed class UserRepository(IdentityDbContext dbContext) : IUserRepository
 {
     public Task<User?> GetByIdAsync(Guid userId, CancellationToken cancellationToken) =>
-        dbContext.Users.SingleOrDefaultAsync(x => x.UserId == userId, cancellationToken);
+        dbContext.Users
+            .Include(x => x.UserRoles)
+            .SingleOrDefaultAsync(x => x.UserId == userId, cancellationToken);
 
     public Task<bool> UsernameExistsAsync(Guid schoolId, string normalizedUsername, CancellationToken cancellationToken) =>
         dbContext.Users.AnyAsync(
