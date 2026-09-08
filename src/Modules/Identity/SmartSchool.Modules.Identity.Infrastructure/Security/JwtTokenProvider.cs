@@ -24,6 +24,7 @@ public sealed class JwtTokenProvider(IOptions<JwtOptions> options) : ITokenProvi
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
+            new(JwtRegisteredClaimNames.Jti, Guid.CreateVersion7().ToString()),
             new("school_id", user.SchoolId.ToString()),
             new("username", user.Username)
         };

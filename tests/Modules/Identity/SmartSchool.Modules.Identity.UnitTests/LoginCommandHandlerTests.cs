@@ -16,6 +16,9 @@ public sealed class LoginCommandHandlerTests
         Assert.Equal(fixture.User.UserId, result.UserId);
         Assert.Equal("admin", result.Username);
         Assert.Equal("access-token", result.AccessToken);
+        Assert.Equal("refresh-token", result.RefreshToken);
+        Assert.Equal("refresh-token-hash", fixture.RefreshTokenRepository.AddedToken?.TokenHash);
+        Assert.NotEqual("refresh-token", fixture.RefreshTokenRepository.AddedToken?.TokenHash);
     }
 
     [Fact]
@@ -119,6 +122,7 @@ public sealed class LoginCommandHandlerTests
             Repository = new FakeUserRepository(userExists ? User : null);
             PasswordHasher = new FakePasswordHasher(Calls);
             TokenProvider = new FakeTokenProvider(Calls);
+            RefreshTokenRepository = new FakeRefreshTokenRepository();
             UnitOfWork = new FakeUnitOfWork();
             Handler = new LoginCommandHandler(
                 new LoginCommandValidator(),
@@ -126,6 +130,8 @@ public sealed class LoginCommandHandlerTests
                 PasswordHasher,
                 new FakeUserAccessReader(),
                 TokenProvider,
+                new FakeRefreshTokenProvider(),
+                RefreshTokenRepository,
                 UnitOfWork);
         }
 
@@ -134,6 +140,7 @@ public sealed class LoginCommandHandlerTests
         public FakeUserRepository Repository { get; }
         public FakePasswordHasher PasswordHasher { get; }
         public FakeTokenProvider TokenProvider { get; }
+        public FakeRefreshTokenRepository RefreshTokenRepository { get; }
         public FakeUnitOfWork UnitOfWork { get; }
         private LoginCommandHandler Handler { get; }
 
@@ -219,6 +226,27 @@ public sealed class LoginCommandHandlerTests
             calls.Add("token");
             return new AccessTokenResult("access-token", DateTime.UtcNow.AddMinutes(30));
         }
+    }
+
+    private sealed class FakeRefreshTokenProvider : IRefreshTokenProvider
+    {
+        public GeneratedRefreshToken Generate()
+        {
+            var createdAtUtc = DateTime.UtcNow;
+            return new("refresh-token", "refresh-token-hash", createdAtUtc.AddDays(7), createdAtUtc);
+        }
+
+        public string Hash(string token) => $"hash::{token}";
+    }
+
+    private sealed class FakeRefreshTokenRepository : IRefreshTokenRepository
+    {
+        public RefreshToken? AddedToken { get; private set; }
+
+        public Task<RefreshToken?> GetByHashAsync(string tokenHash, CancellationToken cancellationToken) =>
+            Task.FromResult<RefreshToken?>(null);
+
+        public void Add(RefreshToken refreshToken) => AddedToken = refreshToken;
     }
 
     private sealed class FakeUnitOfWork : IIdentityUnitOfWork

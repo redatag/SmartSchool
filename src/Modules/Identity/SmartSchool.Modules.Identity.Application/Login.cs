@@ -18,6 +18,8 @@ public sealed class LoginResult
         LoginStatus status,
         string? accessToken,
         DateTime? expiresAtUtc,
+        string? refreshToken,
+        DateTime? refreshTokenExpiresAtUtc,
         Guid? userId,
         string? username,
         IReadOnlyCollection<string> roles,
@@ -28,6 +30,8 @@ public sealed class LoginResult
         Status = status;
         AccessToken = accessToken;
         ExpiresAtUtc = expiresAtUtc;
+        RefreshToken = refreshToken;
+        RefreshTokenExpiresAtUtc = refreshTokenExpiresAtUtc;
         UserId = userId;
         Username = username;
         Roles = roles;
@@ -39,6 +43,8 @@ public sealed class LoginResult
     public LoginStatus Status { get; }
     public string? AccessToken { get; }
     public DateTime? ExpiresAtUtc { get; }
+    public string? RefreshToken { get; }
+    public DateTime? RefreshTokenExpiresAtUtc { get; }
     public Guid? UserId { get; }
     public string? Username { get; }
     public IReadOnlyCollection<string> Roles { get; }
@@ -46,11 +52,17 @@ public sealed class LoginResult
     public string? ErrorCode { get; }
     public IReadOnlyCollection<ValidationError> ValidationErrors { get; }
 
-    public static LoginResult Success(User user, UserAccess access, AccessTokenResult token) =>
+    public static LoginResult Success(
+        User user,
+        UserAccess access,
+        AccessTokenResult token,
+        GeneratedRefreshToken refreshToken) =>
         new(
             LoginStatus.Success,
             token.AccessToken,
             token.ExpiresAtUtc,
+            refreshToken.Token,
+            refreshToken.ExpiresAtUtc,
             user.UserId,
             user.Username,
             access.Roles,
@@ -59,13 +71,13 @@ public sealed class LoginResult
             []);
 
     public static LoginResult Invalid(IReadOnlyCollection<ValidationError> errors) =>
-        new(LoginStatus.Invalid, null, null, null, null, [], [], "validation_error", errors);
+        new(LoginStatus.Invalid, null, null, null, null, null, null, [], [], "validation_error", errors);
 
     public static LoginResult InvalidCredentials() =>
-        new(LoginStatus.InvalidCredentials, null, null, null, null, [], [], "identity.invalid_credentials", []);
+        new(LoginStatus.InvalidCredentials, null, null, null, null, null, null, [], [], "identity.invalid_credentials", []);
 
     public static LoginResult Forbidden() =>
-        new(LoginStatus.Forbidden, null, null, null, null, [], [], "identity.account_inactive", []);
+        new(LoginStatus.Forbidden, null, null, null, null, null, null, [], [], "identity.account_inactive", []);
 }
 
 public sealed record UserAccess(
@@ -113,6 +125,8 @@ public sealed class LoginCommandHandler(
     IPasswordHasher passwordHasher,
     IUserAccessReader accessReader,
     ITokenProvider tokenProvider,
+    IRefreshTokenProvider refreshTokenProvider,
+    IRefreshTokenRepository refreshTokens,
     IIdentityUnitOfWork unitOfWork)
 {
     public async Task<LoginResult> HandleAsync(LoginCommand command, CancellationToken cancellationToken)
@@ -135,8 +149,14 @@ public sealed class LoginCommandHandler(
         var loginAtUtc = DateTime.UtcNow;
         user.RegisterLogin(loginAtUtc);
         var token = tokenProvider.GenerateAccessToken(user, access.Roles, access.Permissions);
+        var generatedRefreshToken = refreshTokenProvider.Generate();
+        refreshTokens.Add(Domain.RefreshToken.Create(
+            user.UserId,
+            generatedRefreshToken.TokenHash,
+            generatedRefreshToken.ExpiresAtUtc,
+            generatedRefreshToken.CreatedAtUtc));
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return LoginResult.Success(user, access, token);
+        return LoginResult.Success(user, access, token, generatedRefreshToken);
     }
 }

@@ -31,6 +31,8 @@ public sealed class LoginEndpointTests
         var body = await response.Content.ReadFromJsonAsync<LoginResponse>();
         Assert.NotNull(body);
         Assert.False(string.IsNullOrWhiteSpace(body.AccessToken));
+        Assert.False(string.IsNullOrWhiteSpace(body.RefreshToken));
+        Assert.InRange(body.RefreshTokenExpiresAtUtc, DateTime.UtcNow.AddDays(6), DateTime.UtcNow.AddDays(8));
         Assert.Equal(seeded.UserId, body.UserId);
         Assert.Equal("admin", body.Username);
         Assert.Equal(["SchoolAdmin"], body.Roles);
@@ -149,6 +151,8 @@ public sealed class LoginEndpointTests
     private sealed record LoginResponse(
         string AccessToken,
         DateTime ExpiresAtUtc,
+        string RefreshToken,
+        DateTime RefreshTokenExpiresAtUtc,
         Guid UserId,
         string Username,
         IReadOnlyCollection<string> Roles,
@@ -167,7 +171,8 @@ public sealed class LoginEndpointTests
                     ["Jwt:Issuer"] = "SmartSchool.Tests",
                     ["Jwt:Audience"] = "SmartSchool.Tests.Client",
                     ["Jwt:Key"] = "test-only-signing-key-with-at-least-thirty-two-bytes",
-                    ["Jwt:AccessTokenExpirationMinutes"] = "30"
+                    ["Jwt:AccessTokenExpirationMinutes"] = "30",
+                    ["Jwt:RefreshTokenExpirationDays"] = "7"
                 });
             });
             builder.ConfigureServices(services =>
