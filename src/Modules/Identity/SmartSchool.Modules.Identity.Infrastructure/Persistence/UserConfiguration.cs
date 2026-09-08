@@ -34,6 +34,11 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .IsUnique().HasDatabaseName("UX_Users_School_NormalizedEmail");
         builder.HasIndex(x => new { x.SchoolId, x.Status })
             .HasDatabaseName("IX_Users_SchoolId_Status");
+        builder.HasMany(x => x.UserRoles)
+            .WithOne()
+            .HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(x => x.UserRoles).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.Ignore(x => x.DomainEvents);
     }
 }
