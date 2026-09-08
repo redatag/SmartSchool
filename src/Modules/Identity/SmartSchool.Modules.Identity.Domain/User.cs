@@ -47,9 +47,9 @@ public sealed class User
     public string FirstName { get; private init; } = string.Empty;
     public string LastName { get; private init; } = string.Empty;
     public string? PhoneNumber { get; private init; }
-    public UserStatus Status { get; private init; }
+    public UserStatus Status { get; private set; }
     public DateTime CreatedAtUtc { get; private init; }
-    public DateTime? LastLoginAtUtc { get; private init; }
+    public DateTime? LastLoginAtUtc { get; private set; }
     public IReadOnlyCollection<UserRole> UserRoles => _userRoles.AsReadOnly();
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
@@ -94,6 +94,22 @@ public sealed class User
         _domainEvents.Add(new RoleAssignedDomainEvent(UserId, roleId, assignedAtUtc));
     }
 
+    public void Activate() => Status = UserStatus.Active;
+
+    public void Deactivate() => Status = UserStatus.Inactive;
+
+    public void Suspend() => Status = UserStatus.Suspended;
+
+    public void RegisterLogin(DateTime utcNow)
+    {
+        if (Status != UserStatus.Active)
+            throw new UserAuthenticationNotAllowedDomainException(UserId, Status);
+        if (utcNow.Kind != DateTimeKind.Utc)
+            throw new IdentityDomainException("Login timestamp must be UTC.");
+
+        LastLoginAtUtc = utcNow;
+    }
+
     public void ClearDomainEvents() => _domainEvents.Clear();
 
     private static string Required(string value, string name, int maximumLength)
@@ -125,3 +141,6 @@ public class IdentityDomainException(string message) : Exception(message);
 
 public sealed class RoleAlreadyAssignedDomainException(Guid userId, Guid roleId)
     : IdentityDomainException($"User '{userId}' already has role '{roleId}'.");
+
+public sealed class UserAuthenticationNotAllowedDomainException(Guid userId, UserStatus status)
+    : IdentityDomainException($"User '{userId}' cannot authenticate while in status '{status}'.");

@@ -1,6 +1,7 @@
 using SmartSchool.Modules.Identity.Application;
 using SmartSchool.Modules.Identity.Domain;
 using SmartSchool.Modules.Identity.Infrastructure.Persistence;
+using SmartSchool.Modules.Identity.Infrastructure.Security;
 using SmartSchool.Modules.Identity.Presentation;
 
 namespace SmartSchool.ArchitectureTests;
@@ -15,6 +16,7 @@ public sealed class IdentityArchitectureTests
         Assert.DoesNotContain("SmartSchool.Modules.Identity.Infrastructure", references);
         Assert.DoesNotContain(references, name => name.StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal));
         Assert.DoesNotContain(references, name => name.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.Ordinal));
+        Assert.DoesNotContain(references, name => name.Contains("IdentityModel", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -39,6 +41,7 @@ public sealed class IdentityArchitectureTests
     {
         Assert.Contains(typeof(IUserRepository), typeof(UserRepository).GetInterfaces());
         Assert.Contains(typeof(IRoleRepository), typeof(RoleRepository).GetInterfaces());
+        Assert.Contains(typeof(ITokenProvider), typeof(JwtTokenProvider).GetInterfaces());
         Assert.Contains(typeof(IIdentityUnitOfWork), typeof(IdentityDbContext).GetInterfaces());
     }
 

@@ -76,6 +76,10 @@ public sealed class CreateUserCommandValidator : ICreateUserCommandValidator
 public interface IUserRepository
 {
     Task<User?> GetByIdAsync(Guid userId, CancellationToken cancellationToken);
+    Task<User?> GetByUsernameOrEmailAsync(
+        Guid schoolId,
+        string normalizedUsernameOrEmail,
+        CancellationToken cancellationToken);
     Task<bool> UsernameExistsAsync(Guid schoolId, string normalizedUsername, CancellationToken cancellationToken);
     Task<bool> EmailExistsAsync(Guid schoolId, string normalizedEmail, CancellationToken cancellationToken);
     void Add(User user);
@@ -84,6 +88,7 @@ public interface IUserRepository
 public interface IPasswordHasher
 {
     string Hash(string password);
+    bool Verify(string hashedPassword, string providedPassword);
 }
 
 public interface IIdentityUnitOfWork

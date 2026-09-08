@@ -83,6 +83,39 @@ public sealed class UserTests
         Assert.Empty(user.UserRoles);
     }
 
+    [Fact]
+    public void RegisterLogin_UpdatesLastLoginAtUtc()
+    {
+        var user = CreateUser();
+        var loginAtUtc = new DateTime(2026, 9, 9, 8, 30, 0, DateTimeKind.Utc);
+
+        user.RegisterLogin(loginAtUtc);
+
+        Assert.Equal(loginAtUtc, user.LastLoginAtUtc);
+    }
+
+    [Fact]
+    public void RegisterLogin_RejectsInactiveUser()
+    {
+        var user = CreateUser();
+        user.Deactivate();
+
+        Assert.Throws<UserAuthenticationNotAllowedDomainException>(
+            () => user.RegisterLogin(DateTime.UtcNow));
+        Assert.Null(user.LastLoginAtUtc);
+    }
+
+    [Fact]
+    public void RegisterLogin_RejectsSuspendedUser()
+    {
+        var user = CreateUser();
+        user.Suspend();
+
+        Assert.Throws<UserAuthenticationNotAllowedDomainException>(
+            () => user.RegisterLogin(DateTime.UtcNow));
+        Assert.Null(user.LastLoginAtUtc);
+    }
+
     private static User CreateUser() => User.Create(
         Guid.NewGuid(), "admin", "ADMIN", "admin@smartschool.com", "ADMIN@SMARTSCHOOL.COM",
         "hashed-password", "Ahmed", "Mohamed", "0500000000");
