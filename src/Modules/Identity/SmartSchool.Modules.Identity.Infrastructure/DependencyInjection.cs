@@ -1,4 +1,7 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SmartSchool.Modules.Identity.Application;
@@ -24,6 +27,27 @@ public static class DependencyInjection
         services.AddScoped<IIdentityUnitOfWork>(provider => provider.GetRequiredService<IdentityDbContext>());
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer();
+        services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+            .Configure<Microsoft.Extensions.Options.IOptions<JwtOptions>>((options, configuredOptions) =>
+            {
+                var jwtOptions = configuredOptions.Value;
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = jwtOptions.Issuer,
+                    ValidateAudience = true,
+                    ValidAudience = jwtOptions.Audience,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKeyResolver = (_, _, _, _) =>
+                        Encoding.UTF8.GetByteCount(jwtOptions.Key) >= 32
+                            ? [new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Key))]
+                            : [],
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.Zero
+                };
+            });
         services.AddSingleton<ITokenProvider, JwtTokenProvider>();
         services.AddSingleton<IRefreshTokenProvider, RefreshTokenProvider>();
         services.AddSingleton<ICreateUserCommandValidator, CreateUserCommandValidator>();

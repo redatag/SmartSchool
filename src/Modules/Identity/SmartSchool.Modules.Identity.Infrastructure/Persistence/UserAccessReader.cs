@@ -17,6 +17,16 @@ public sealed class UserAccessReader(IdentityDbContext dbContext) : IUserAccessR
             .Distinct()
             .ToArrayAsync(cancellationToken);
 
-        return new UserAccess(roles, []);
+        var permissions = await (
+                from userRole in dbContext.Set<UserRole>()
+                join rolePermission in dbContext.RolePermissions on userRole.RoleId equals rolePermission.RoleId
+                join permission in dbContext.Permissions on rolePermission.PermissionId equals permission.PermissionId
+                where userRole.UserId == userId
+                orderby permission.Code
+                select permission.Code)
+            .Distinct()
+            .ToArrayAsync(cancellationToken);
+
+        return new UserAccess(roles, permissions);
     }
 }

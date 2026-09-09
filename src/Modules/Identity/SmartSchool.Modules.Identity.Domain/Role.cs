@@ -3,6 +3,7 @@ namespace SmartSchool.Modules.Identity.Domain;
 public sealed class Role
 {
     private readonly List<IDomainEvent> _domainEvents = [];
+    private readonly List<RolePermission> _rolePermissions = [];
 
     private Role(
         Guid roleId,
@@ -33,6 +34,7 @@ public sealed class Role
     public bool IsSystemRole { get; private init; }
     public DateTime CreatedAtUtc { get; private init; }
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+    public IReadOnlyCollection<RolePermission> RolePermissions => _rolePermissions.AsReadOnly();
 
     public static Role Create(
         Guid schoolId,
@@ -58,6 +60,15 @@ public sealed class Role
     }
 
     public static string NormalizeName(string name) => name.Trim().ToUpperInvariant();
+
+    public void GrantPermission(Guid permissionId)
+    {
+        if (permissionId == Guid.Empty) throw new IdentityDomainException("PermissionId is required.");
+        if (_rolePermissions.Any(rolePermission => rolePermission.PermissionId == permissionId))
+            return;
+
+        _rolePermissions.Add(RolePermission.Create(RoleId, permissionId, DateTime.UtcNow));
+    }
 
     public void ClearDomainEvents() => _domainEvents.Clear();
 

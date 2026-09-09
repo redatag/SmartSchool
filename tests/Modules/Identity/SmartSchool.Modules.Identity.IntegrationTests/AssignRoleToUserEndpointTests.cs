@@ -18,7 +18,7 @@ public sealed class AssignRoleToUserEndpointTests
         await using var factory = new IdentityApiFactory();
         var (userId, roleId) = await SeedUserAndRoleAsync(factory);
 
-        var response = await factory.CreateClient().PostAsync(Endpoint(userId, roleId), content: null);
+        var response = await factory.CreateClientWithPermission("roles.manage").PostAsync(Endpoint(userId, roleId), content: null);
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
@@ -28,7 +28,7 @@ public sealed class AssignRoleToUserEndpointTests
     {
         await using var factory = new IdentityApiFactory();
         var (userId, roleId) = await SeedUserAndRoleAsync(factory);
-        var client = factory.CreateClient();
+        var client = factory.CreateClientWithPermission("roles.manage");
 
         Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync(Endpoint(userId, roleId), null)).StatusCode);
 
@@ -45,7 +45,7 @@ public sealed class AssignRoleToUserEndpointTests
     {
         await using var factory = new IdentityApiFactory();
         var (userId, roleId) = await SeedUserAndRoleAsync(factory);
-        var client = factory.CreateClient();
+        var client = factory.CreateClientWithPermission("roles.manage");
         Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync(Endpoint(userId, roleId), null)).StatusCode);
 
         var response = await client.PostAsync(Endpoint(userId, roleId), null);
@@ -60,7 +60,7 @@ public sealed class AssignRoleToUserEndpointTests
         await using var factory = new IdentityApiFactory();
         var (_, roleId) = await SeedUserAndRoleAsync(factory);
 
-        var response = await factory.CreateClient().PostAsync(Endpoint(Guid.NewGuid(), roleId), null);
+        var response = await factory.CreateClientWithPermission("roles.manage").PostAsync(Endpoint(Guid.NewGuid(), roleId), null);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         Assert.Contains("identity.user_not_found", await response.Content.ReadAsStringAsync());
@@ -72,7 +72,7 @@ public sealed class AssignRoleToUserEndpointTests
         await using var factory = new IdentityApiFactory();
         var (userId, _) = await SeedUserAndRoleAsync(factory);
 
-        var response = await factory.CreateClient().PostAsync(Endpoint(userId, Guid.NewGuid()), null);
+        var response = await factory.CreateClientWithPermission("roles.manage").PostAsync(Endpoint(userId, Guid.NewGuid()), null);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         Assert.Contains("identity.role_not_found", await response.Content.ReadAsStringAsync());
@@ -84,7 +84,7 @@ public sealed class AssignRoleToUserEndpointTests
         await using var factory = new IdentityApiFactory();
         var (userId, roleId) = await SeedUserAndRoleAsync(factory, sameSchool: false);
 
-        var response = await factory.CreateClient().PostAsync(Endpoint(userId, roleId), null);
+        var response = await factory.CreateClientWithPermission("roles.manage").PostAsync(Endpoint(userId, roleId), null);
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         Assert.Contains("identity.role_school_mismatch", await response.Content.ReadAsStringAsync());
@@ -94,7 +94,7 @@ public sealed class AssignRoleToUserEndpointTests
     public async Task EmptyIds_ReturnValidationErrors()
     {
         await using var factory = new IdentityApiFactory();
-        var client = factory.CreateClient();
+        var client = factory.CreateClientWithPermission("roles.manage");
 
         var emptyUserResponse = await client.PostAsync(Endpoint(Guid.Empty, Guid.NewGuid()), null);
         var emptyRoleResponse = await client.PostAsync(Endpoint(Guid.NewGuid(), Guid.Empty), null);
@@ -137,6 +137,7 @@ public sealed class AssignRoleToUserEndpointTests
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            IdentityIntegrationTestAuthentication.ConfigureJwt(builder);
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<DbContextOptions<IdentityDbContext>>();

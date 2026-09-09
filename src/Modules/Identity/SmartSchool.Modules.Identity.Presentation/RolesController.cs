@@ -9,6 +9,7 @@ namespace SmartSchool.Modules.Identity.Presentation;
 public sealed class RolesController(CreateRoleCommandHandler handler) : ControllerBase
 {
     [HttpPost]
+    [RequirePermission("roles.manage")]
     [ProducesResponseType<CreateRoleResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]

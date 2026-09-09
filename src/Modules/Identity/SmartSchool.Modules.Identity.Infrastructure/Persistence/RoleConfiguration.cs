@@ -23,6 +23,12 @@ internal sealed class RoleConfiguration : IEntityTypeConfiguration<Role>
         builder.HasIndex(x => new { x.SchoolId, x.NormalizedName })
             .IsUnique()
             .HasDatabaseName("UX_Roles_School_NormalizedName");
+        builder.HasMany(x => x.RolePermissions)
+            .WithOne()
+            .HasForeignKey(x => x.RoleId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .HasConstraintName("FK_RolePermissions_Roles_RoleId");
+        builder.Navigation(x => x.RolePermissions).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.Ignore(x => x.DomainEvents);
     }
 }

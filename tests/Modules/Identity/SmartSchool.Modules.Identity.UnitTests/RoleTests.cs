@@ -65,4 +65,18 @@ public sealed class RoleTests
     {
         Assert.Throws<IdentityDomainException>(() => Role.Create(Guid.Empty, "Teacher"));
     }
+
+    [Fact]
+    public void GrantPermission_AddsPermissionOnce()
+    {
+        var role = Role.Create(Guid.NewGuid(), "Administrator");
+        var permissionId = Guid.NewGuid();
+
+        role.GrantPermission(permissionId);
+        role.GrantPermission(permissionId);
+
+        var rolePermission = Assert.Single(role.RolePermissions);
+        Assert.Equal(role.RoleId, rolePermission.RoleId);
+        Assert.Equal(permissionId, rolePermission.PermissionId);
+    }
 }
