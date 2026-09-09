@@ -16,7 +16,7 @@ public sealed class CreateUserEndpointTests
     public async Task ValidUser_ReturnsCreated()
     {
         await using var factory = new IdentityApiFactory();
-        var response = await factory.CreateClient().PostAsJsonAsync("/api/identity/users", ValidRequest());
+        var response = await factory.CreateClientWithPermission("users.manage").PostAsJsonAsync("/api/identity/users", ValidRequest());
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<CreateUserResponse>();
@@ -28,7 +28,7 @@ public sealed class CreateUserEndpointTests
     public async Task DuplicateUsername_ReturnsConflict()
     {
         await using var factory = new IdentityApiFactory();
-        var client = factory.CreateClient();
+        var client = factory.CreateClientWithPermission("users.manage");
         var request = ValidRequest();
         Assert.Equal(HttpStatusCode.Created, (await client.PostAsJsonAsync("/api/identity/users", request)).StatusCode);
 
@@ -42,7 +42,7 @@ public sealed class CreateUserEndpointTests
     public async Task DuplicateEmail_ReturnsConflict()
     {
         await using var factory = new IdentityApiFactory();
-        var client = factory.CreateClient();
+        var client = factory.CreateClientWithPermission("users.manage");
         var request = ValidRequest();
         Assert.Equal(HttpStatusCode.Created, (await client.PostAsJsonAsync("/api/identity/users", request)).StatusCode);
 
@@ -58,7 +58,7 @@ public sealed class CreateUserEndpointTests
     public async Task InvalidRequest_ReturnsValidationError(string email, string password)
     {
         await using var factory = new IdentityApiFactory();
-        var response = await factory.CreateClient().PostAsJsonAsync(
+        var response = await factory.CreateClientWithPermission("users.manage").PostAsJsonAsync(
             "/api/identity/users", ValidRequest() with { Email = email, Password = password });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -78,6 +78,7 @@ public sealed class CreateUserEndpointTests
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            IdentityIntegrationTestAuthentication.ConfigureJwt(builder);
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<DbContextOptions<IdentityDbContext>>();

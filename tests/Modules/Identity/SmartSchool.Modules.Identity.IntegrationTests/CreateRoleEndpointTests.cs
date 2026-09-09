@@ -17,7 +17,7 @@ public sealed class CreateRoleEndpointTests
     {
         await using var factory = new IdentityApiFactory();
 
-        var response = await factory.CreateClient().PostAsJsonAsync("/api/identity/roles", ValidRequest());
+        var response = await factory.CreateClientWithPermission("roles.manage").PostAsJsonAsync("/api/identity/roles", ValidRequest());
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<CreateRoleResponse>();
@@ -29,7 +29,7 @@ public sealed class CreateRoleEndpointTests
     public async Task DuplicateRole_ReturnsConflict()
     {
         await using var factory = new IdentityApiFactory();
-        var client = factory.CreateClient();
+        var client = factory.CreateClientWithPermission("roles.manage");
         var request = ValidRequest();
         Assert.Equal(HttpStatusCode.Created, (await client.PostAsJsonAsync("/api/identity/roles", request)).StatusCode);
 
@@ -46,7 +46,7 @@ public sealed class CreateRoleEndpointTests
     {
         await using var factory = new IdentityApiFactory();
 
-        var response = await factory.CreateClient().PostAsJsonAsync(
+        var response = await factory.CreateClientWithPermission("roles.manage").PostAsJsonAsync(
             "/api/identity/roles",
             ValidRequest() with { Name = "   " });
 
@@ -59,7 +59,7 @@ public sealed class CreateRoleEndpointTests
     {
         await using var factory = new IdentityApiFactory();
 
-        var response = await factory.CreateClient().PostAsJsonAsync(
+        var response = await factory.CreateClientWithPermission("roles.manage").PostAsJsonAsync(
             "/api/identity/roles",
             ValidRequest() with { SchoolId = Guid.Empty });
 
@@ -79,6 +79,7 @@ public sealed class CreateRoleEndpointTests
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            IdentityIntegrationTestAuthentication.ConfigureJwt(builder);
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<DbContextOptions<IdentityDbContext>>();

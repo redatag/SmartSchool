@@ -8,7 +8,9 @@ namespace SmartSchool.Modules.Identity.Presentation;
 public static class IdentityPresentation
 {
     public static IMvcBuilder AddIdentityPresentation(this IServiceCollection services) =>
-        services.AddControllers().AddApplicationPart(typeof(IdentityPresentation).Assembly);
+        services.AddPermissionAuthorization()
+            .AddControllers()
+            .AddApplicationPart(typeof(IdentityPresentation).Assembly);
 }
 
 [ApiController]
@@ -16,6 +18,7 @@ public static class IdentityPresentation
 public sealed class UsersController(CreateUserCommandHandler handler) : ControllerBase
 {
     [HttpPost]
+    [RequirePermission("users.manage")]
     [ProducesResponseType<CreateUserResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
@@ -57,6 +60,7 @@ public sealed class UsersController(CreateUserCommandHandler handler) : Controll
     }
 
     [HttpPost("{userId}/roles/{roleId}")]
+    [RequirePermission("roles.manage")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
