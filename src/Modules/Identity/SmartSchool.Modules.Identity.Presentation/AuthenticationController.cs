@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartSchool.Modules.Identity.Application;
 
@@ -12,6 +13,7 @@ public sealed class AuthenticationController(
     LogoutCommandHandler logoutHandler) : ControllerBase
 {
     [HttpPost("login")]
+    [AllowAnonymous]
     [ProducesResponseType<LoginResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -62,6 +64,7 @@ public sealed class AuthenticationController(
     }
 
     [HttpPost("refresh")]
+    [AllowAnonymous]
     [ProducesResponseType<RefreshResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -100,6 +103,7 @@ public sealed class AuthenticationController(
     }
 
     [HttpPost("logout")]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Logout(LogoutRequest request, CancellationToken cancellationToken)
