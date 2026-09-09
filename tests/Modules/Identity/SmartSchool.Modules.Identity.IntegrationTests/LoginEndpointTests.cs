@@ -90,6 +90,20 @@ public sealed class LoginEndpointTests
     }
 
     [Fact]
+    public async Task SuspendedUser_ReturnsForbidden()
+    {
+        await using var factory = new IdentityApiFactory();
+        var seeded = await SeedUserAsync(factory, user => user.Suspend());
+
+        var response = await factory.CreateClient().PostAsJsonAsync(
+            "/api/identity/auth/login",
+            ValidRequest(seeded.SchoolId));
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Contains("identity.account_inactive", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task ValidEmailLogin_ReturnsOk()
     {
         await using var factory = new IdentityApiFactory();

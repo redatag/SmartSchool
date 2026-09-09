@@ -49,6 +49,31 @@ public sealed class PermissionAuthorizationEndpointTests
     }
 
     [Fact]
+    public async Task InvalidJwt_ReturnsUnauthorized()
+    {
+        await using var factory = new IdentityApiFactory();
+        var client = factory.CreateClient().UseBearerToken("invalid.jwt.token");
+
+        var response = await client.PostAsJsonAsync("/api/identity/users", ValidCreateUserRequest());
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ExpiredJwt_ReturnsUnauthorized()
+    {
+        await using var factory = new IdentityApiFactory();
+        var expiredToken = IdentityIntegrationTestAuthentication.CreateToken(
+            IdentityPermissionCodes.UsersManage,
+            DateTime.UtcNow.AddMinutes(-1));
+        var client = factory.CreateClient().UseBearerToken(expiredToken);
+
+        var response = await client.PostAsJsonAsync("/api/identity/users", ValidCreateUserRequest());
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
     public async Task RolePermission_IsResolvedAndIncludedInAccessToken()
     {
         await using var factory = new IdentityApiFactory();

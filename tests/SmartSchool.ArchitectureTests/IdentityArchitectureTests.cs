@@ -14,6 +14,7 @@ public sealed class IdentityArchitectureTests
         var references = ReferencesOf(typeof(User));
 
         Assert.DoesNotContain("SmartSchool.Modules.Identity.Infrastructure", references);
+        Assert.DoesNotContain("SmartSchool.Modules.Identity.Presentation", references);
         Assert.DoesNotContain(references, name => name.StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal));
         Assert.DoesNotContain(references, name => name.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.Ordinal));
         Assert.DoesNotContain(references, name => name.Contains("IdentityModel", StringComparison.Ordinal));
@@ -25,6 +26,28 @@ public sealed class IdentityArchitectureTests
         Assert.DoesNotContain(
             "SmartSchool.Modules.Identity.Infrastructure",
             ReferencesOf(typeof(CreateUserCommandHandler)));
+    }
+
+    [Fact]
+    public void IdentityProjects_DoNotReferenceOtherModuleInfrastructure()
+    {
+        var assemblies = new[]
+        {
+            typeof(User).Assembly,
+            typeof(CreateUserCommandHandler).Assembly,
+            typeof(UserRepository).Assembly,
+            typeof(UsersController).Assembly
+        };
+
+        foreach (var assembly in assemblies)
+        {
+            Assert.DoesNotContain(
+                assembly.GetReferencedAssemblies(),
+                reference => reference.Name is { } name &&
+                    name.StartsWith("SmartSchool.Modules.", StringComparison.Ordinal) &&
+                    name.EndsWith(".Infrastructure", StringComparison.Ordinal) &&
+                    name != "SmartSchool.Modules.Identity.Infrastructure");
+        }
     }
 
     [Fact]
