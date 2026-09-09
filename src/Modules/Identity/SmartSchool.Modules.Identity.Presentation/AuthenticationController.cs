@@ -8,7 +8,8 @@ namespace SmartSchool.Modules.Identity.Presentation;
 [Route("api/identity/auth")]
 public sealed class AuthenticationController(
     LoginCommandHandler loginHandler,
-    RefreshTokenCommandHandler refreshTokenHandler) : ControllerBase
+    RefreshTokenCommandHandler refreshTokenHandler,
+    LogoutCommandHandler logoutHandler) : ControllerBase
 {
     [HttpPost("login")]
     [ProducesResponseType<LoginResponse>(StatusCodes.Status200OK)]
@@ -97,6 +98,27 @@ public sealed class AuthenticationController(
             title: result.ErrorCode,
             detail: "The refresh token is invalid.");
     }
+
+    [HttpPost("logout")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Logout(LogoutRequest request, CancellationToken cancellationToken)
+    {
+        var result = await logoutHandler.HandleAsync(
+            new LogoutCommand(request.RefreshToken),
+            cancellationToken);
+
+        if (result.IsSuccess) return NoContent();
+
+        var errors = result.ValidationErrors
+            .GroupBy(x => x.Field)
+            .ToDictionary(group => group.Key, group => group.Select(x => x.Message).ToArray());
+        return ValidationProblem(new ValidationProblemDetails(errors)
+        {
+            Status = StatusCodes.Status400BadRequest,
+            Title = "Request validation failed."
+        });
+    }
 }
 
 public sealed record LoginRequest(Guid SchoolId, string UsernameOrEmail, string Password);
@@ -112,6 +134,7 @@ public sealed record LoginResponse(
     IReadOnlyCollection<string> Permissions);
 
 public sealed record RefreshRequest(string RefreshToken);
+public sealed record LogoutRequest(string RefreshToken);
 
 public sealed record RefreshResponse(
     string AccessToken,

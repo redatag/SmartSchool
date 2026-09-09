@@ -31,11 +31,13 @@ public static class DependencyInjection
         services.AddSingleton<IAssignRoleToUserCommandValidator, AssignRoleToUserCommandValidator>();
         services.AddSingleton<ILoginCommandValidator, LoginCommandValidator>();
         services.AddSingleton<IRefreshTokenCommandValidator, RefreshTokenCommandValidator>();
+        services.AddSingleton<ILogoutCommandValidator, LogoutCommandValidator>();
         services.AddScoped<CreateUserCommandHandler>();
         services.AddScoped<CreateRoleCommandHandler>();
         services.AddScoped<AssignRoleToUserCommandHandler>();
         services.AddScoped<LoginCommandHandler>();
         services.AddScoped<RefreshTokenCommandHandler>();
+        services.AddScoped<LogoutCommandHandler>();
         return services;
     }
 }
